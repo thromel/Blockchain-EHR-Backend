@@ -5,7 +5,7 @@ const app = express();
 const port = 3000;
 
 //Import the PatientRecordsFactory ABI JSON
-const PatientRecordsFactory = require('./artifacts/contracts/PatientRecordsFactory.sol/PatientRecordsFactory.json');
+const PatientRecordsFactory = require('./artifacts/contracts/PatientRecordFactory.sol/PatientRecordFactory.json');
 //Import contract address stored at config.dev.json
 const config = require('./config.dev.json');
 
@@ -18,6 +18,11 @@ const FACTORY_ADDRESS = config.factoryContractAddress; // Replace with the deplo
 
 const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
 const signer = provider.getSigner(); // You can also use a specific signer from a private key or mnemonic
+
+//A simple endpoint to test the API
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
 
 app.post('/signup', async (req, res) => {
   const { walletAddress } = req.body;

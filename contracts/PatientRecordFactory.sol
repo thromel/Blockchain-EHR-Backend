@@ -3,7 +3,7 @@ pragma solidity ^0.8.1;
 
 import "./PatientRecords.sol";
 
-contract PatientRecordsFactory {
+contract PatientRecordFactory {
     // Keep track of all deployed PatientRecords contracts
     address[] public patientRecordsInstances;
 

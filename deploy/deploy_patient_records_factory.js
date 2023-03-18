@@ -5,12 +5,12 @@ async function main() {
 
   console.log('Deploying contracts with the account:', deployer.address);
 
-  const PatientRecordsFactory = await ethers.getContractFactory(
-    'PatientRecordsFactory'
+  const PatientRecordFactory = await ethers.getContractFactory(
+    'PatientRecordFactory'
   );
-  const patientRecordsFactory = await PatientRecordsFactory.deploy();
+  const patientRecordFactory = await PatientRecordFactory.deploy();
 
-  console.log('PatientRecordsFactory address:', patientRecordsFactory.address);
+  console.log('PatientRecordsFactory address:', patientRecordFactory.address);
 }
 
 main()
