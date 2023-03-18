@@ -12,10 +12,10 @@ npm or yarn
 ## Installation
 - Clone the repository:
 
-`git clone https://github.com/yourusername/patient-records-hardhat.git`
+`git@github.com:BUET-UG-Thesis-Jan22-Blockchain-ASMLH/Backend.git`
 
 - Change into the project directory:
-``cd patient-records-hardhat``
+``cd Backend``
 - Install dependencies:
 ``npm install``
 
