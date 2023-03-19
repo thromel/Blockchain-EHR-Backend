@@ -4,22 +4,22 @@ pragma solidity ^0.8.1;
 import "./PatientRecords.sol";
 
 contract PatientRecordFactory {
-    // Keep track of all deployed PatientRecords contracts
-    address[] public patientRecordsInstances;
+    mapping(address => address) public patientRecords;
 
     // Event to notify when a new PatientRecords contract is created
     event PatientRecordsCreated(address patientRecords);
 
     // Function to deploy a new PatientRecords contract
     function createPatientRecords(address patient) public returns (address) {
-        PatientRecords newPatientRecords = new PatientRecords(patient);
-        patientRecordsInstances.push(address(newPatientRecords));
-        emit PatientRecordsCreated(address(newPatientRecords));
-        return address(newPatientRecords);
+        require(patientRecords[patient] == address(0), "PatientRecord already exists for the user.");
+        
+        PatientRecords newPatientRecord = new PatientRecords(patient);
+        patientRecords[patient] = address(newPatientRecord);
+        emit PatientRecordsCreated(address(newPatientRecord));
+        return address(newPatientRecord);
     }
 
-    // Function to get all deployed PatientRecords contracts
-    function getPatientRecordsInstances() public view returns (address[] memory) {
-        return patientRecordsInstances;
+    function getPatientRecordByUser(address user) public view returns (address) {
+        return patientRecords[user];
     }
 }

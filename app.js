@@ -63,6 +63,46 @@ app.post('/signup', async (req, res) => {
   }
 });
 
+app.get('/patient/:userWalletAddress', async (req, res) => {
+  try {
+    const userWalletAddress = req.params.userWalletAddress;
+
+    console.log(userWalletAddress);
+
+    // Get the contract instance
+    const patientRecordFactory = new ethers.Contract(
+      FACTORY_ADDRESS,
+      FACTORY_ABI,
+      signer
+    );
+
+    // Call the getPatientRecordByUser function
+    const patientRecordAddress =
+      await patientRecordFactory.getPatientRecordByUser(userWalletAddress);
+
+    if (patientRecordAddress) {
+      res.status(200).send({
+        success: true,
+        message: 'PatientRecords contract address retrieved successfully.',
+        patientRecordAddress: patientRecordAddress,
+      });
+    } else {
+      res.status(404).send({
+        success: false,
+        message:
+          'PatientRecords contract not found for the given user address.',
+      });
+    }
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message:
+        'Error occurred while fetching the PatientRecords contract address.',
+      error: error.message,
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`API listening at http://localhost:${port}`);
 });
