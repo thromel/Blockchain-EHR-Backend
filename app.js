@@ -4,14 +4,23 @@ const { ethers } = require('ethers');
 const app = express();
 const port = 3000;
 
+const { Pool } = require('pg');
+
 //Import the PatientRecordsFactory ABI JSON
 const PatientRecordFactory = require('./artifacts/contracts/PatientRecordFactory.sol/PatientRecordFactory.json');
 //Import contract address stored at config.dev.json
 const config = require('./config.dev.json');
 
+const pool = new Pool({
+  user: 'your_username',
+  host: 'your_host',
+  database: 'your_database',
+  password: 'your_password',
+  port: 5432,
+});
+
 app.use(bodyParser.json());
 
-// Replace these values with the appropriate values for your project
 const RPC_URL = 'http://127.0.0.1:8545/';
 const FACTORY_ABI = PatientRecordFactory.abi;
 const FACTORY_ADDRESS = config.factoryContractAddress; // Replace with the deployed PatientRecordsFactory address
@@ -100,6 +109,34 @@ app.get('/patient/:userWalletAddress', async (req, res) => {
         'Error occurred while fetching the PatientRecords contract address.',
       error: error.message,
     });
+  }
+});
+
+app.post('/patient/add', async (req, res) => {
+  try {
+    const { data, publicKey } = req.body;
+
+    // Encrypt the data using the public key
+    const buffer = Buffer.from(data, 'utf-8');
+    const encryptedData = crypto.publicEncrypt(publicKey, buffer);
+
+    // Store the encrypted data in PostgreSQL
+    const insertQuery =
+      'INSERT INTO encrypted_data (data) VALUES ($1) RETURNING id';
+    const { rows } = await pool.query(insertQuery, [
+      encryptedData.toString('base64'),
+    ]);
+
+    // Return the unique identifier
+    res.status(201).json({
+      message: 'Encrypted data stored successfully',
+      dataId: rows[0].id,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: 'An error occurred while processing the request' });
   }
 });
 
