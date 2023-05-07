@@ -3,34 +3,30 @@ const bodyParser = require('body-parser');
 const { ethers } = require('ethers');
 const app = express();
 const port = 3000;
-
+const encryption = require('./utils/encryption');
 const { Pool } = require('pg');
+const db = require('./utils/db');
 
 //Import the PatientRecordsFactory ABI JSON
 const PatientRecordFactory = require('./artifacts/contracts/PatientRecordFactory.sol/PatientRecordFactory.json');
+const PatientRecords = require('./artifacts/contracts/PatientRecords.sol/PatientRecords.json');
 //Import contract address stored at config.dev.json
 const config = require('./config.dev.json');
-
-const pool = new Pool({
-  user: 'your_username',
-  host: 'your_host',
-  database: 'your_database',
-  password: 'your_password',
-  port: 5432,
-});
 
 app.use(bodyParser.json());
 
 const RPC_URL = 'http://127.0.0.1:8545/';
 const FACTORY_ABI = PatientRecordFactory.abi;
 const FACTORY_ADDRESS = config.factoryContractAddress; // Replace with the deployed PatientRecordsFactory address
-
+const PATIENT_RECORDS_ABI = PatientRecords.abi;
 const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
 const signer = provider.getSigner(); // You can also use a specific signer from a private key or mnemonic
 
 //A simple endpoint to test the API
 app.get('/', (req, res) => {
   //Get the current block number
+
+  console.log(req.body);
 
   provider
     .getBlockNumber()
@@ -112,31 +108,27 @@ app.get('/patient/:userWalletAddress', async (req, res) => {
   }
 });
 
-app.post('/patient/add', async (req, res) => {
+app.post('/encrypt', async (req, res) => {
+  const { recordHash, encryptedKey, signature, patientContractAddress } =
+    req.body;
+
+  const patientRecord = new ethers.Contract(
+    patientContractAddress,
+    PATIENT_RECORDS_ABI,
+    signer
+  );
+
   try {
-    const { data, publicKey } = req.body;
-
-    // Encrypt the data using the public key
-    const buffer = Buffer.from(data, 'utf-8');
-    const encryptedData = crypto.publicEncrypt(publicKey, buffer);
-
-    // Store the encrypted data in PostgreSQL
-    const insertQuery =
-      'INSERT INTO encrypted_data (data) VALUES ($1) RETURNING id';
-    const { rows } = await pool.query(insertQuery, [
-      encryptedData.toString('base64'),
-    ]);
-
-    // Return the unique identifier
-    res.status(201).json({
-      message: 'Encrypted data stored successfully',
-      dataId: rows[0].id,
-    });
+    const tx = await patientRecord.addRecord(
+      recordHash,
+      encryptedKey,
+      signature
+    );
+    await tx.wait();
+    res.status(201).json({ success: true });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ message: 'An error occurred while processing the request' });
+    res.status(500).json({ error: 'Error adding record' });
   }
 });
 

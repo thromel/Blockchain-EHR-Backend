@@ -29,8 +29,19 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
     }
 
     // Adding a new record for the patient
-    function addRecord(bytes32 recordHash, bytes memory encryptedKey) public {
-        require(msg.sender == patient, "Only the patient can add records.");
+    function addRecord(
+        bytes32 recordHash,
+        bytes memory encryptedKey,
+        bytes memory signature
+    ) public {
+        // Verify the signature
+        bytes32 hash = keccak256(abi.encodePacked("Add record"));
+        bytes32 messageHash = hash.toEthSignedMessageHash();
+        address signer = messageHash.recover(signature);
+
+        // Only allow the patient to add records
+        require(signer == patient, "Only the patient can add records.");
+
         uint256 tokenId = totalSupply();
         _safeMint(patient, tokenId);
         records.push(recordHash);
@@ -39,75 +50,108 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
     }
 
     // Granting permission to a third party to access a specific record
-    function grantPermission(uint256 recordId, address grantedTo, uint256 expirationTimestamp) public {
-        require(msg.sender == patient, "Only the patient can grant permissions.");
+    function grantPermission(
+        uint256 recordId,
+        address grantedTo,
+        uint256 expirationTimestamp
+    ) public {
+        require(
+            msg.sender == patient,
+            "Only the patient can grant permissions."
+        );
         require(grantedTo != patient, "Cannot grant permission to self.");
         require(recordId < totalSupply(), "Invalid record ID.");
         _permissionIds.increment();
         uint256 permissionId = _permissionIds.current();
-        permissions[permissionId] = Permission(permissionId, recordId, grantedTo, expirationTimestamp, false);
+        permissions[permissionId] = Permission(
+            permissionId,
+            recordId,
+            grantedTo,
+            expirationTimestamp,
+            false
+        );
     }
 
     // Revoking permission from a third party
     function revokePermission(uint256 permissionId) public {
-        require(msg.sender == patient, "Only the patient can revoke permissions.");
-        require(permissions[permissionId].grantedTo != address(0), "Permission does not exist.");
+        require(
+            msg.sender == patient,
+            "Only the patient can revoke permissions."
+        );
+        require(
+            permissions[permissionId].grantedTo != address(0),
+            "Permission does not exist."
+        );
         permissions[permissionId].isRevoked = true;
     }
 
     // Checking if a third party has valid permission for a specific record
-    function hasValidPermission(uint256 permissionId, uint256 recordId, address requester) public view returns (bool) {
-        require(permissionId <= _permissionIds.current(), "Invalid permission ID.");
+    function hasValidPermission(
+        uint256 permissionId,
+        uint256 recordId,
+        address requester
+    ) public view returns (bool) {
+        require(
+            permissionId <= _permissionIds.current(),
+            "Invalid permission ID."
+        );
         Permission memory permission = permissions[permissionId];
-        return (
-            permission.recordId == recordId &&
+        return (permission.recordId == recordId &&
             permission.grantedTo == requester &&
             !permission.isRevoked &&
-            permission.expirationTimestamp >= block.timestamp
-        );
+            permission.expirationTimestamp >= block.timestamp);
     }
 
     // ERC721 Metadata
     mapping(uint256 => bytes) private _tokenMetadata;
 
-    function tokenMetadata(uint256 tokenId) public view virtual returns (bytes memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+    function tokenMetadata(
+        uint256 tokenId
+    ) public view virtual returns (bytes memory) {
+        require(
+            _exists(tokenId),
+            "ERC721Metadata: URI query for nonexistent token"
+        );
         return _tokenMetadata[tokenId];
     }
 
-    function _setTokenMetadata(uint256 tokenId, bytes memory metadata) internal virtual {
-        require(_exists(tokenId), "ERC721Metadata: Metadata set of nonexistent token");
+    function _setTokenMetadata(
+        uint256 tokenId,
+        bytes memory metadata
+    ) internal virtual {
+        require(
+            _exists(tokenId),
+            "ERC721Metadata: Metadata set of nonexistent token"
+        );
         _tokenMetadata[tokenId] = metadata;
     }
 
     // The following functions are overrides required by Solidity.
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
-        internal
-        override(ERC721, ERC721Enumerable)
-    {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 batchSize
+    ) internal override(ERC721, ERC721Enumerable) {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+    function _burn(
+        uint256 tokenId
+    ) internal override(ERC721, ERC721URIStorage) {
         super._burn(tokenId);
     }
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override(ERC721, ERC721URIStorage)
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, ERC721Enumerable)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721, ERC721Enumerable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
