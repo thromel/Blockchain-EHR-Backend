@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { ethers } = require('ethers');
+const cors = require('cors');
 const app = express();
 const port = 3000;
 const encryption = require('./utils/encryption');
@@ -13,6 +14,7 @@ const PatientRecords = require('./artifacts/contracts/PatientRecords.sol/Patient
 //Import contract address stored at config.dev.json
 const config = require('./config.dev.json');
 
+app.use(cors());
 app.use(bodyParser.json());
 
 const RPC_URL = 'http://127.0.0.1:8545/';
@@ -39,8 +41,9 @@ app.get('/', (req, res) => {
     });
 });
 
-app.post('/signup', async (req, res) => {
-  const { walletAddress } = req.body;
+app.post('/patient/signup', async (req, res) => {
+  const { walletAddress, firstName, lastName, email, password } = req.body;
+  console.log(req.body);
 
   if (!walletAddress) {
     res.status(400).json({ error: 'Missing wallet address' });
@@ -108,12 +111,40 @@ app.get('/patient/:userWalletAddress', async (req, res) => {
   }
 });
 
-app.post('/encrypt', async (req, res) => {
-  const { recordHash, encryptedKey, signature, patientContractAddress } =
-    req.body;
+async function signMessage(message, signer) {
+  const messageHash = ethers.utils.id(message);
+  const signature = await signer.signMessage(
+    ethers.utils.arrayify(messageHash)
+  );
+  return signature;
+}
+
+app.post('/patient/record', async (req, res) => {
+  let {
+    recordHash,
+    encryptedKey,
+    signature,
+    patientRecordAddress,
+    walletAddress,
+  } = req.body;
+
+  if (signature === undefined) {
+    const privateKey =
+      '0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e'; // Replace with the actual private key of the patientAddress
+    const signer = new ethers.Wallet(privateKey, provider);
+    const message = 'Add record';
+
+    signMessage(message, signer)
+      .then((signature) => {
+        console.log('Signature:', signature);
+      })
+      .catch((error) => {
+        console.error('Error signing message:', error);
+      });
+  }
 
   const patientRecord = new ethers.Contract(
-    patientContractAddress,
+    patientRecordAddress,
     PATIENT_RECORDS_ABI,
     signer
   );
@@ -125,7 +156,7 @@ app.post('/encrypt', async (req, res) => {
       signature
     );
     await tx.wait();
-    res.status(201).json({ success: true });
+    res.status(201).json({ success: true, txHash: tx.hash, tx });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error adding record' });
@@ -134,4 +165,11 @@ app.post('/encrypt', async (req, res) => {
 
 app.listen(port, () => {
   console.log(`API listening at http://localhost:${port}`);
+
+  // try {
+  //   db.query('SELECT 1');
+  //   console.log('Connected to PostgreSQL database');
+  // } catch (error) {
+  //   console.error('Error connecting to PostgreSQL database:', error);
+  // }
 });
