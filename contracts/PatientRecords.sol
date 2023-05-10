@@ -112,7 +112,7 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
             !permission.isRevoked &&
             permission.expirationTimestamp >= block.timestamp);
     }
-
+ 
     // ERC721 Metadata
     mapping(uint256 => bytes) private _tokenMetadata;
 

@@ -120,22 +120,28 @@ async function signMessage(message, signer) {
   return signature;
 }
 
-async function getRecordByIndex(walletAddress, patientRecordAddress, index) {
-  const patientRecords = new ethers.Contract(
-    patientRecordAddress,
-    PATIENT_RECORDS_ABI,
-    provider
-  );
-  const tokenId = await patientRecords.tokenOfOwnerByIndex(
-    walletAddress,
-    index
-  );
-  const uri = await patientRecords.tokenURI(tokenId);
-  const metadata = ethers.utils.toUtf8String(
-    await patientRecords.tokenMetadata(tokenId)
-  );
-  return { tokenId, uri, metadata };
-}
+app.get('/patient/record/get', async (req, res) => {
+  try {
+    const { walletAddress, index, patientContractAddress } = req.query;
+    console.log(req.query);
+    const signer = provider.getSigner(walletAddress);
+    const contract = new ethers.Contract(
+      patientContractAddress,
+      PATIENT_RECORDS_ABI,
+      signer
+    );
+
+    const recordData = await contract.getRecordByIndex(index);
+    const tokenId = recordData.tokenId;
+    const recordURI = recordData.recordURI;
+    const recordMetadata = ethers.utils.toUtf8String(recordData.recordMetadata);
+
+    res.json({ tokenId, recordURI, recordMetadata });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch the record' });
+  }
+});
 
 app.post('/patient/record', async (req, res) => {
   const {
