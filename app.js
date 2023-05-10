@@ -20,6 +20,7 @@ const signup = require('./routes/signup');
 const findPatientRecordAddress = require('./routes/findPatientRecordAddress');
 const getRecord = require('./routes/getRecord');
 const permission = require('./routes/permission');
+const signin = require('./routes/signin');
 
 //Constants
 const RPC_URL = 'http://127.0.0.1:8545/';
@@ -36,6 +37,8 @@ const signer = provider.getSigner(); // You can also use a specific signer from 
 app.use('/', findPatientRecordAddress);
 
 app.use('/patient/signup', signup);
+
+app.use('/patient/signin', signin);
 
 app.use('/patient/record/add', addRecord);
 

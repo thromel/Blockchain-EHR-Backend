@@ -16,6 +16,7 @@ const signer = provider.getSigner();
 
 router.post('/', async (req, res) => {
   const {
+    encryptedData,
     recordHash,
     encryptedKey,
     signature,

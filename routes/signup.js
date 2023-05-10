@@ -1,6 +1,7 @@
 const express = require('express');
 const { ethers } = require('ethers');
 const router = express.Router();
+const bcrypt = require('bcrypt');
 
 const PatientRecordFactory = require('../artifacts/contracts/PatientRecordFactory.sol/PatientRecordFactory.json');
 const PatientRecords = require('../artifacts/contracts/PatientRecords.sol/PatientRecords.json');
@@ -39,6 +40,7 @@ router.post('/', async (req, res) => {
 
     console.log(event);
     const patientRecordsAddress = event.args.patientRecords;
+    const passwordHash = await bcrypt.hash(password, 10);
 
     pool.query(
       'INSERT INTO patients (wallet_address, name, date_of_birth, address, email, password_hash) VALUES ($1, $2, $3, $4, $5, $6)',
@@ -48,7 +50,7 @@ router.post('/', async (req, res) => {
         dob,
         address,
         email,
-        password,
+        passwordHash,
       ],
       (error, results) => {
         if (error) {
