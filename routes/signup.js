@@ -13,8 +13,11 @@ const FACTORY_ADDRESS = config.factoryContractAddress; // Replace with the deplo
 const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
 const signer = provider.getSigner();
 
+const pool = require('../utils/db.js');
+
 router.post('/', async (req, res) => {
-  const { walletAddress, firstName, lastName, email, password } = req.body;
+  const { walletAddress, firstName, lastName, address, dob, email, password } =
+    req.body;
   console.log(req.body);
 
   if (!walletAddress) {
@@ -36,6 +39,25 @@ router.post('/', async (req, res) => {
 
     console.log(event);
     const patientRecordsAddress = event.args.patientRecords;
+
+    pool.query(
+      'INSERT INTO patients (wallet_address, name, date_of_birth, address, email, password_hash) VALUES ($1, $2, $3, $4, $5, $6)',
+      [
+        walletAddress,
+        firstName + ' ' + lastName,
+        dob,
+        address,
+        email,
+        password,
+      ],
+      (error, results) => {
+        if (error) {
+          throw error;
+        }
+        console.log('Patient added with Wallet Address: ', walletAddress);
+      }
+    );
+
     res.status(201).json({ patientRecordsAddress });
   } catch (error) {
     console.error(error);

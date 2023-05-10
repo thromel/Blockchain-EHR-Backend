@@ -1,14 +1,11 @@
-// db.js
-const pgp = require('pg-promise')();
+const { Pool } = require('pg');
 
-const dbConfig = {
-  host: 'your_host',
+const pool = new Pool({
+  user: 'romel',
+  host: 'localhost',
+  database: 'Blockchain-Healthcare',
+  password: '',
   port: 5432,
-  database: 'your_database',
-  user: 'your_username',
-  password: 'your_password',
-};
+});
 
-const db = pgp(dbConfig);
-
-module.exports = db;
+module.exports = pool;

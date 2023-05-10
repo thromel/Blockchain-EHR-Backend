@@ -6,7 +6,7 @@ const app = express();
 const port = 3000;
 const encryption = require('./utils/encryption');
 const { Pool } = require('pg');
-const db = require('./utils/db');
+const pool = require('./utils/db');
 
 //Import the PatientRecordsFactory ABI JSON
 const PatientRecordFactory = require('./artifacts/contracts/PatientRecordFactory.sol/PatientRecordFactory.json');
@@ -19,6 +19,7 @@ const addRecord = require('./routes/addRecord');
 const signup = require('./routes/signup');
 const findPatientRecordAddress = require('./routes/findPatientRecordAddress');
 const getRecord = require('./routes/getRecord');
+const permission = require('./routes/permission');
 
 //Constants
 const RPC_URL = 'http://127.0.0.1:8545/';
@@ -40,6 +41,13 @@ app.use('/patient/record/add', addRecord);
 
 app.use('/patient/record/get', getRecord);
 
+app.use('/patient/permission', permission);
+
 app.listen(port, () => {
+  pool
+    .connect()
+    .then(() => console.log('Connected successfully'))
+    .catch((e) => console.log(e));
+
   console.log(`API listening at http://localhost:${port}`);
 });

@@ -45,15 +45,16 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         uint256 tokenId = totalSupply();
         _safeMint(patient, tokenId);
         records.push(recordHash);
-        _setTokenURI(tokenId, string(abi.encodePacked("ipfs://", recordHash)));
+        _setTokenURI(tokenId, string(abi.encodePacked(recordHash)));
         _setTokenMetadata(tokenId, encryptedKey);
     }
 
-    function getRecordByIndex(uint256 index) public view returns (uint256 tokenId, string memory recordURI, bytes memory recordMetadata) {
+    function getRecordByIndex(uint256 index) public view returns (uint256 tokenId, string memory recordURI, bytes memory recordMetadata, bytes32 recordHash) {
     // require(ownerOf(index) == msg.sender, "You don't own this record.");
         tokenId = index;
         recordURI = tokenURI(index);
         recordMetadata = tokenMetadata(index);
+        recordHash = records[index];
     }
 
 
