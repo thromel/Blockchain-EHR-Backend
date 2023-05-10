@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const forge = require('node-forge');
 
 // Generate a random symmetric encryption key
 function generateSymmetricKey() {
@@ -26,19 +27,14 @@ function decryptData(symmKey, iv, encryptedData) {
   return decryptedData.toString('utf8');
 }
 
-const forge = require('node-forge');
-
-async function encryptWithPublicKey(publicKeyPem, data) {
+async function encryptWithPublicKey(publicKeyPem) {
   const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
   const symmKey = forge.random.getBytesSync(32);
-  const encryptedData = forge.util.encode64(
-    publicKey.encrypt(data, 'RSA-OAEP')
-  );
 
   const encryptedSymmKey = publicKey.encrypt(symmKey, 'RSA-OAEP');
   const encryptedSymmKeyBase64 = forge.util.encode64(encryptedSymmKey);
 
-  return { encryptedData, encryptedSymmKey: encryptedSymmKeyBase64 };
+  return { encryptedSymmKey: encryptedSymmKeyBase64 };
 }
 
 async function decryptWithPrivateKey(
