@@ -13,6 +13,7 @@ const PatientRecordFactory = require('./artifacts/contracts/PatientRecordFactory
 const PatientRecords = require('./artifacts/contracts/PatientRecords.sol/PatientRecords.json');
 //Import contract address stored at config.dev.json
 const config = require('./config.dev.json');
+const { ColumnSet } = require('pg-promise');
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -88,7 +89,7 @@ app.get('/patient/:userWalletAddress', async (req, res) => {
     const patientRecordAddress =
       await patientRecordFactory.getPatientRecordByUser(userWalletAddress);
 
-    if (patientRecordAddress) {
+    if (patientRecordAddress != ethers.constants.AddressZero) {
       res.status(200).send({
         success: true,
         message: 'PatientRecords contract address retrieved successfully.',
@@ -119,14 +120,34 @@ async function signMessage(message, signer) {
   return signature;
 }
 
+async function getRecordByIndex(walletAddress, patientRecordAddress, index) {
+  const patientRecords = new ethers.Contract(
+    patientRecordAddress,
+    PATIENT_RECORDS_ABI,
+    provider
+  );
+  const tokenId = await patientRecords.tokenOfOwnerByIndex(
+    walletAddress,
+    index
+  );
+  const uri = await patientRecords.tokenURI(tokenId);
+  const metadata = ethers.utils.toUtf8String(
+    await patientRecords.tokenMetadata(tokenId)
+  );
+  return { tokenId, uri, metadata };
+}
+
 app.post('/patient/record', async (req, res) => {
-  let {
+  const {
     recordHash,
     encryptedKey,
     signature,
     patientRecordAddress,
     walletAddress,
   } = req.body;
+
+  // TODO: Testing Code -- Remove Later - START
+  console.log(req.body);
 
   if (signature === undefined) {
     const privateKey =
@@ -142,19 +163,23 @@ app.post('/patient/record', async (req, res) => {
         console.error('Error signing message:', error);
       });
   }
+  const recordHash32 = ethers.utils.formatBytes32String(recordHash);
+  // const bytes = ethers.utils.toUtf8Bytes(recordHash32);
+  // const hexStr = ethers.utils.hexlify(bytes);
 
-  const patientRecord = new ethers.Contract(
-    patientRecordAddress,
-    PATIENT_RECORDS_ABI,
-    signer
-  );
+  const bytes1 = ethers.utils.toUtf8Bytes(encryptedKey);
+  const hexStr1 = ethers.utils.hexlify(bytes1);
+
+  // TODO: TESTING CODE -- REMOVE LATER -- END
 
   try {
-    const tx = await patientRecord.addRecord(
-      recordHash,
-      encryptedKey,
-      signature
+    const patientRecord = new ethers.Contract(
+      patientRecordAddress,
+      PATIENT_RECORDS_ABI,
+      signer
     );
+
+    const tx = await patientRecord.addRecord(recordHash32, hexStr1, signature);
     await tx.wait();
     res.status(201).json({ success: true, txHash: tx.hash, tx });
   } catch (error) {

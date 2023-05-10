@@ -49,6 +49,17 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         _setTokenMetadata(tokenId, encryptedKey);
     }
 
+    function getRecordByIndex(uint256 index) public view returns (uint256 tokenId, string memory recordURI, bytes memory recordMetadata) {
+    // require(ownerOf(index) == msg.sender, "You don't own this record.");
+        tokenId = index;
+        recordURI = tokenURI(index);
+        recordMetadata = tokenMetadata(index);
+    }
+
+
+    
+
+
     // Granting permission to a third party to access a specific record
     function grantPermission(
         uint256 recordId,
