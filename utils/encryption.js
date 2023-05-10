@@ -57,10 +57,19 @@ async function decryptWithPrivateKey(
   return decryptedData;
 }
 
+async function signMessage(message, signer) {
+  const messageHash = ethers.utils.id(message);
+  const signature = await signer.signMessage(
+    ethers.utils.arrayify(messageHash)
+  );
+  return signature;
+}
+
 module.exports = { encryptWithPublicKey, decryptWithPrivateKey };
 
 module.exports = {
   encryptWithPublicKey,
   decryptWithPrivateKey,
   decryptData,
+  signMessage,
 };
