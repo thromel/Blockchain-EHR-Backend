@@ -14,6 +14,8 @@ const PATIENT_RECORDS_ABI = PatientRecords.abi;
 const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
 const signer = provider.getSigner();
 
+const pool = require('../utils/db.js');
+
 router.post('/', async (req, res) => {
   const {
     encryptedData,
@@ -58,7 +60,33 @@ router.post('/', async (req, res) => {
     );
 
     const tx = await patientRecord.addRecord(recordHash32, hexStr1, signature);
-    await tx.wait();
+    const receipt = await tx.wait();
+
+    const event = receipt.events.find((e) => e.event === 'RecordAdded');
+    const index = event.args.recordIndex.toNumber();
+
+    const query = `
+      INSERT INTO records(wallet_address, patient_record_address, blockchain_index, record_hash, encrypted_data, encrypted_aes_key)
+      VALUES($1, $2, $3, $4, $5, $6)
+    `;
+    const values = [
+      walletAddress,
+      patientRecordAddress,
+      index,
+      recordHash,
+      encryptedData,
+      encryptedKey,
+    ];
+
+    try {
+      await pool.query(query, values);
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ error: 'Error storing record in the database' });
+    }
+
     res.status(201).json({ success: true, txHash: tx.hash, tx });
   } catch (error) {
     console.error(error);

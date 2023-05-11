@@ -28,6 +28,9 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         patient = _patient;
     }
 
+    event RecordAdded(uint256 recordIndex);
+    
+
     // Adding a new record for the patient
     function addRecord(
         bytes32 recordHash,
@@ -47,6 +50,9 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         records.push(recordHash);
         _setTokenURI(tokenId, string(abi.encodePacked(recordHash)));
         _setTokenMetadata(tokenId, encryptedKey);
+
+        uint256 recordIndex = records.length - 1;
+        emit RecordAdded(recordIndex);
     }
 
     function getRecordByIndex(uint256 index) public view returns (uint256 tokenId, string memory recordURI, bytes memory recordMetadata, bytes32 recordHash) {
