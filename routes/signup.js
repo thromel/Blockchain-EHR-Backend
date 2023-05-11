@@ -17,16 +17,43 @@ const signer = provider.getSigner();
 const pool = require('../utils/db.js');
 
 router.post('/', async (req, res) => {
-  const { walletAddress, firstName, lastName, address, dob, email, password } =
-    req.body;
+  const {
+    walletAddress,
+    firstName,
+    lastName,
+    address,
+    dob,
+    email,
+    password,
+    role,
+    publicKeyPem,
+  } = req.body;
   console.log(req.body);
 
-  if (!walletAddress) {
-    res.status(400).json({ error: 'Missing wallet address' });
-    return;
-  }
+  //TODO:Add validation for all fields
 
   try {
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    pool.query(
+      'INSERT INTO users (wallet_address, name, date_of_birth, address, email, password_hash, role, rsa_public_key) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+      [
+        walletAddress,
+        firstName + ' ' + lastName,
+        dob,
+        address,
+        email,
+        passwordHash,
+        role,
+        publicKeyPem,
+      ],
+      (error, results) => {
+        if (error) {
+          throw error;
+        }
+      }
+    );
+
     const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
     const tx = await factory.createPatientRecords(walletAddress);
 
@@ -37,28 +64,9 @@ router.post('/', async (req, res) => {
     const event = receipt.events.find(
       (e) => e.event === 'PatientRecordsCreated'
     );
+    const patientRecordsAddress = event.args.patientRecords;
 
     console.log(event);
-    const patientRecordsAddress = event.args.patientRecords;
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    pool.query(
-      'INSERT INTO patients (wallet_address, name, date_of_birth, address, email, password_hash) VALUES ($1, $2, $3, $4, $5, $6)',
-      [
-        walletAddress,
-        firstName + ' ' + lastName,
-        dob,
-        address,
-        email,
-        passwordHash,
-      ],
-      (error, results) => {
-        if (error) {
-          throw error;
-        }
-        console.log('Patient added with Wallet Address: ', walletAddress);
-      }
-    );
 
     res.status(201).json({ patientRecordsAddress });
   } catch (error) {

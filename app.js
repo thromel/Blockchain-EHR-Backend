@@ -38,9 +38,9 @@ const signer = provider.getSigner(); // You can also use a specific signer from 
 
 app.use('/', findPatientRecordAddress);
 
-app.use('/patient/signup', signup);
+app.use('/signup', signup);
 
-app.use('/patient/signin', signin);
+app.use('/signin', signin);
 
 app.use('/patient/record/add', addRecord);
 

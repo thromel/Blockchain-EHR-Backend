@@ -21,7 +21,7 @@ router.post('/', async (req, res) => {
   try {
     // Check if user exists
     const user = await pool.query(
-      'SELECT * FROM patients WHERE wallet_address = $1',
+      'SELECT * FROM users WHERE wallet_address = $1',
       [walletAddress]
     );
     console.log(user.rows[0]);
