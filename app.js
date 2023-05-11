@@ -22,6 +22,7 @@ const getRecord = require('./routes/getRecord');
 const permission = require('./routes/permission');
 const signin = require('./routes/signin');
 const addRequest = require('./routes/addRequest');
+const getAllRequests = require('./routes/getAllRequests');
 
 //Constants
 const RPC_URL = 'http://127.0.0.1:8545/';
@@ -46,6 +47,8 @@ app.use('/patient/record/add', addRecord);
 app.use('/patient/record/get', getRecord);
 
 app.use('/patient/record/permission', addRequest);
+
+app.use('/patient/record/requests', getAllRequests);
 
 app.listen(port, () => {
   pool
