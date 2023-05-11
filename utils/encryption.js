@@ -27,9 +27,8 @@ function decryptData(symmKey, iv, encryptedData) {
   return decryptedData.toString('utf8');
 }
 
-async function encryptWithPublicKey(publicKeyPem) {
+async function encryptWithPublicKey(symmKey, publicKeyPem) {
   const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
-  const symmKey = forge.random.getBytesSync(32);
 
   const encryptedSymmKey = publicKey.encrypt(symmKey, 'RSA-OAEP');
   const encryptedSymmKeyBase64 = forge.util.encode64(encryptedSymmKey);
