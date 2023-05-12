@@ -14,23 +14,38 @@ const PATIENT_RECORDS_ABI = PatientRecords.abi;
 const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
 const signer = provider.getSigner();
 
+const pool = require('../utils/db.js');
+
 router.get('/', async (req, res) => {
   try {
-    const { walletAddress, index, patientContractAddress } = req.query;
+    const { walletAddress, index, patientRecordsAddress } = req.query;
+
+    console.log(req.query);
 
     const signer = provider.getSigner(walletAddress);
     const contract = new ethers.Contract(
-      patientContractAddress,
+      patientRecordsAddress,
       PATIENT_RECORDS_ABI,
       signer
     );
 
     const recordData = await contract.getRecordByIndex(index);
-    const tokenId = recordData.tokenId;
-    const recordURI = recordData.recordURI;
-    const recordMetadata = ethers.utils.toUtf8String(recordData.recordMetadata);
+    const recordHash = recordData.recordHash;
+    const recordMetadata = recordData.recordMetadata;
 
-    res.json({ tokenId, recordURI, recordMetadata });
+    const result = await pool.query(
+      `SELECT * FROM records WHERE record_hash = '${recordHash.slice(2)}'`
+    );
+
+    console.log(result.rows[0]);
+    console.log(recordHash);
+    const encryptedData = result.rows[0].encrypted_data.toString('hex');
+
+    res.json({
+      recordHash,
+      encryptedSymmetricKey: recordMetadata,
+      encryptedData,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch the record' });

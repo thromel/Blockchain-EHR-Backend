@@ -49,8 +49,10 @@ router.post('/', async (req, res) => {
     const event = receipt.events.find((e) => e.event === 'RecordAdded');
     const index = event.args.recordIndex.toNumber();
 
-    const encryptedKeyHexString = `E'\\\\x${encryptedKey}'`;
-    const encryptedDataHexString = `E'\\\\x${encryptedData}'`;
+    // const encryptedKeyHexString = `E'\\\\x${encryptedKey}'`;
+    // const encryptedDataHexString = `E'\\\\x${encryptedData}'`;
+    const encryptedKeyBuffer = Buffer.from(encryptedKey, 'hex');
+    const encryptedDataBuffer = Buffer.from(encryptedData, 'hex');
 
     const query = `
       INSERT INTO records(wallet_address, patient_record_address, blockchain_index, record_hash, encrypted_data, encrypted_aes_key)
@@ -61,13 +63,16 @@ router.post('/', async (req, res) => {
       patientRecordsAddress,
       index,
       recordHash,
-      encryptedDataHexString,
-      encryptedKeyHexString,
+      encryptedDataBuffer,
+      encryptedKeyBuffer,
     ];
 
     try {
       const result = await pool.query(query, values);
-      console.log(data.rows[0]);
+
+      const data = await pool.query(
+        `SELECT * FROM records WHERE record_hash = '${recordHash}'`
+      );
     } catch (err) {
       console.error(err);
       return res
