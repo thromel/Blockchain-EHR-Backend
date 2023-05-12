@@ -12,7 +12,7 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
     using Counters for Counters.Counter;
 
     address public patient;
-    bytes32[] public records;
+    bytes[] public records;
     Counters.Counter private _permissionIds;
     mapping(uint256 => Permission) public permissions;
 
@@ -28,12 +28,11 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         patient = _patient;
     }
 
-    event RecordAdded(uint256 recordIndex);
-    
+    event RecordAdded(uint256 recordIndex, address signer);
 
     // Adding a new record for the patient
     function addRecord(
-        bytes32 recordHash,
+        bytes memory recordHash,
         bytes memory encryptedKey,
         bytes memory signature
     ) public {
@@ -41,6 +40,7 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         bytes32 hash = keccak256(abi.encodePacked("Add record"));
         bytes32 messageHash = hash.toEthSignedMessageHash();
         address signer = messageHash.recover(signature);
+
 
         // Only allow the patient to add records
         require(signer == patient, "Only the patient can add records.");
@@ -52,10 +52,10 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         _setTokenMetadata(tokenId, encryptedKey);
 
         uint256 recordIndex = records.length - 1;
-        emit RecordAdded(recordIndex);
+        emit RecordAdded(recordIndex, signer);
     }
 
-    function getRecordByIndex(uint256 index) public view returns (uint256 tokenId, string memory recordURI, bytes memory recordMetadata, bytes32 recordHash) {
+    function getRecordByIndex(uint256 index) public view returns (uint256 tokenId, string memory recordURI, bytes memory recordMetadata, bytes memory recordHash) {
     // require(ownerOf(index) == msg.sender, "You don't own this record.");
         tokenId = index;
         recordURI = tokenURI(index);

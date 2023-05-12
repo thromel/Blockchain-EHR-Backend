@@ -22,48 +22,35 @@ router.post('/', async (req, res) => {
     recordHash,
     encryptedKey,
     signature,
-    patientRecordAddress,
+    patientRecordsAddress,
     walletAddress,
   } = req.body;
 
-  // TODO: Testing Code -- Remove Later - START
   console.log(req.body);
 
-  if (signature === undefined) {
-    const privateKey =
-      '0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e'; // Replace with the actual private key of the patientAddress
-    const signer = new ethers.Wallet(privateKey, provider);
-    const message = 'Add record';
-
-    signMessage(message, signer)
-      .then((signature) => {
-        console.log('Signature:', signature);
-      })
-      .catch((error) => {
-        console.error('Error signing message:', error);
-      });
-  }
-  const recordHash32 = ethers.utils.formatBytes32String(recordHash);
-  // const bytes = ethers.utils.toUtf8Bytes(recordHash32);
-  // const hexStr = ethers.utils.hexlify(bytes);
-
-  const bytes1 = ethers.utils.toUtf8Bytes(encryptedKey);
-  const hexStr1 = ethers.utils.hexlify(bytes1);
-
-  // TODO: TESTING CODE -- REMOVE LATER -- END
+  const recordHash32 = ethers.utils.arrayify('0x' + recordHash);
 
   try {
     const patientRecord = new ethers.Contract(
-      patientRecordAddress,
+      patientRecordsAddress,
       PATIENT_RECORDS_ABI,
       signer
     );
 
-    const tx = await patientRecord.addRecord(recordHash32, hexStr1, signature);
+    // Now you can use arrayify with the hexadecimal string
+    const byteArray = ethers.utils.arrayify('0x' + encryptedKey);
+    const tx = await patientRecord.addRecord(
+      recordHash32,
+      byteArray,
+      signature
+    );
     const receipt = await tx.wait();
-
+    console.log(receipt.events);
     const event = receipt.events.find((e) => e.event === 'RecordAdded');
     const index = event.args.recordIndex.toNumber();
+
+    const encryptedKeyHexString = `E'\\\\x${encryptedKey}'`;
+    const encryptedDataHexString = `E'\\\\x${encryptedData}'`;
 
     const query = `
       INSERT INTO records(wallet_address, patient_record_address, blockchain_index, record_hash, encrypted_data, encrypted_aes_key)
@@ -71,15 +58,16 @@ router.post('/', async (req, res) => {
     `;
     const values = [
       walletAddress,
-      patientRecordAddress,
+      patientRecordsAddress,
       index,
       recordHash,
-      encryptedData,
-      encryptedKey,
+      encryptedDataHexString,
+      encryptedKeyHexString,
     ];
 
     try {
-      await pool.query(query, values);
+      const result = await pool.query(query, values);
+      console.log(data.rows[0]);
     } catch (err) {
       console.error(err);
       return res
