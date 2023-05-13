@@ -18,7 +18,8 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
 
     struct Permission {
         uint256 permissionId;
-        uint256 recordId;
+        uint256[] recordIds; // This now holds multiple recordIds
+        bytes encryptedKey; // This holds the encryptedKey
         address grantedTo;
         uint256 expirationTimestamp;
         bool isRevoked;
@@ -74,24 +75,30 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
 
     // Granting permission to a third party to access a specific record
     function grantPermission(
-        uint256 recordId,
+        uint256[] memory recordIds, // this now accepts multiple recordIds
         address grantedTo,
         uint256 expirationTimestamp,
+        bytes memory encryptedKey, // this now accepts an encryptedKey
         bytes memory signature
     ) public {
         // Verify the signature
         bytes32 hash = keccak256(abi.encodePacked("Add permission"));
         bytes32 messageHash = hash.toEthSignedMessageHash();
         address signer = messageHash.recover(signature);
+
         // Only allow the patient to add records
         require(signer == patient, "Only the patient can grant permission.");
 
-        require(recordId < totalSupply(), "Invalid record ID.");
+        for (uint i = 0; i < recordIds.length; i++) {
+            require(recordIds[i] < totalSupply(), "Invalid record ID.");
+        }
+
         _permissionIds.increment();
         uint256 permissionId = _permissionIds.current();
         permissions[permissionId] = Permission(
             permissionId,
-            recordId,
+            recordIds,
+            encryptedKey,
             grantedTo,
             expirationTimestamp,
             false
@@ -111,23 +118,65 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         permissions[permissionId].isRevoked = true;
     }
 
-    // Checking if a third party has valid permission for a specific record
-    function hasValidPermission(
+    // Checking if a third party has valid permission for specific records
+    function checkAccess(
         uint256 permissionId,
-        uint256 recordId,
-        address requester
+        bytes memory signature
     ) public view returns (bool) {
+        // Verify the signature
+        bytes32 hash = keccak256(abi.encodePacked("Access records"));
+        bytes32 messageHash = hash.toEthSignedMessageHash();
+        address signer = messageHash.recover(signature);
+        
+        // Check if the signer is the same as the requester
+        require(signer == msg.sender, "Invalid signature.");
+
         require(
             permissionId <= _permissionIds.current(),
             "Invalid permission ID."
         );
+        
         Permission memory permission = permissions[permissionId];
-        return (permission.recordId == recordId &&
-            permission.grantedTo == requester &&
-            !permission.isRevoked &&
-            permission.expirationTimestamp >= block.timestamp);
+        
+        // Check if the permission is for the requester and hasn't been revoked
+        if (permission.grantedTo != msg.sender || permission.isRevoked) {
+            return false;
+        }
+        
+        // Check if the permission has expired
+        if (permission.expirationTimestamp < block.timestamp) {
+            return false;
+        }
+        
+        // If all checks pass, the requester has valid permission
+        return true;
     }
- 
+
+    modifier hasAccess(uint256 permissionId, bytes memory signature) {
+        require(checkAccess(permissionId, signature), "No access to records.");
+        _;
+    }
+
+        function getRecordHashesWithPermission(uint256 permissionId, bytes memory signature) 
+        public 
+        view 
+        hasAccess(permissionId, signature) 
+        returns (bytes[] memory, bytes[] memory) 
+        {
+            Permission memory permission = permissions[permissionId];
+            bytes[] memory recordHashes = new bytes[](permission.recordIds.length);
+            bytes[] memory encryptedKeys = new bytes[](permission.recordIds.length);
+            
+            for (uint256 i = 0; i < permission.recordIds.length; i++) {
+                uint256 recordId = permission.recordIds[i];
+                recordHashes[i] = records[recordId];
+                encryptedKeys[i] = _tokenMetadata[recordId];
+            }
+        
+            return (recordHashes, encryptedKeys);
+        }
+
+        
     // ERC721 Metadata
     mapping(uint256 => bytes) private _tokenMetadata;
 
