@@ -19,6 +19,7 @@ const addRecord = require('./routes/addRecord');
 const signup = require('./routes/signup');
 const findPatientRecordAddress = require('./routes/findPatientRecordAddress');
 const getRecord = require('./routes/getRecord');
+const getAllRecords = require('./routes/getAllRecords');
 const permission = require('./routes/permission');
 const signin = require('./routes/signin');
 const addRequest = require('./routes/addRequest');
@@ -45,6 +46,8 @@ app.use('/signin', signin);
 app.use('/patient/record/add', addRecord);
 
 app.use('/patient/record/get', getRecord);
+
+app.use('/patient/record/getAll', getAllRecords);
 
 app.use('/patient/record/permission', addRequest);
 

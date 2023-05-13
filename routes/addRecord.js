@@ -49,8 +49,6 @@ router.post('/', async (req, res) => {
     const event = receipt.events.find((e) => e.event === 'RecordAdded');
     const index = event.args.recordIndex.toNumber();
 
-    // const encryptedKeyHexString = `E'\\\\x${encryptedKey}'`;
-    // const encryptedDataHexString = `E'\\\\x${encryptedData}'`;
     const encryptedKeyBuffer = Buffer.from(encryptedKey, 'hex');
     const encryptedDataBuffer = Buffer.from(encryptedData, 'hex');
 

@@ -63,6 +63,11 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         recordHash = records[index];
     }
 
+    //Get the total number of records
+    function getRecordCount() public view returns (uint256) {
+        return totalSupply();
+    }
+
 
     
 
@@ -71,13 +76,16 @@ contract PatientRecords is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
     function grantPermission(
         uint256 recordId,
         address grantedTo,
-        uint256 expirationTimestamp
+        uint256 expirationTimestamp,
+        bytes memory signature
     ) public {
-        require(
-            msg.sender == patient,
-            "Only the patient can grant permissions."
-        );
-        require(grantedTo != patient, "Cannot grant permission to self.");
+        // Verify the signature
+        bytes32 hash = keccak256(abi.encodePacked("Add permission"));
+        bytes32 messageHash = hash.toEthSignedMessageHash();
+        address signer = messageHash.recover(signature);
+        // Only allow the patient to add records
+        require(signer == patient, "Only the patient can grant permission.");
+
         require(recordId < totalSupply(), "Invalid record ID.");
         _permissionIds.increment();
         uint256 permissionId = _permissionIds.current();
