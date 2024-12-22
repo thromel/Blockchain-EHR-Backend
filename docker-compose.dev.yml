@@ -1,0 +1,37 @@
+version: '3.8'
+
+# Development overrides for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  backend:
+    build:
+      target: builder
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src:ro
+      - ./contracts:/app/contracts:ro
+      - ./migrations:/app/migrations:ro
+      # Prevent overwriting node_modules
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      NODE_ENV: development
+    ports:
+      - "9229:9229" # Node.js debugger
+
+  postgres:
+    ports:
+      - "5432:5432"
+    volumes:
+      # For easy database inspection
+      - ./migrations:/migrations:ro
+
+  hardhat:
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./contracts:/app/contracts
+      - ./scripts:/app/scripts
+      - ./test:/app/test
+    command: npx hardhat node --hostname 0.0.0.0
