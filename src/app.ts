@@ -38,6 +38,17 @@ if (config.env === 'development') {
 // API routes
 app.use(config.apiPrefix, routes);
 
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: '2.0.0',
+  });
+});
+
 // Root endpoint
 app.get('/', (req: Request, res: Response) => {
   res.json({
