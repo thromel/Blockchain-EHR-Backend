@@ -18,7 +18,13 @@
     "deploy": "hardhat run scripts/deploy.ts --network localhost",
     "compile": "hardhat compile",
     "clean": "hardhat clean && rm -rf dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:format": "prisma format",
+    "prisma:validate": "prisma validate",
+    "prisma:push": "prisma db push"
   },
   "keywords": [
     "blockchain",
@@ -66,6 +72,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.1",
+    "@prisma/client": "^6.19.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
@@ -83,6 +90,7 @@
     "morgan": "^1.10.0",
     "pg": "^8.11.0",
     "pg-promise": "^11.5.0",
+    "prisma": "^6.19.0",
     "winston": "^3.11.0"
   },
   "engines": {

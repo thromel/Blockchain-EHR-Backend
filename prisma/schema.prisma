@@ -1,0 +1,193 @@
+// Prisma Schema for Blockchain EHR System
+// This defines the database schema with type-safe models
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Model - Represents patients, doctors, and admins
+model User {
+  walletAddress          String    @id @map("wallet_address")
+  name                   String
+  email                  String    @unique
+  passwordHash           String    @map("password_hash")
+  role                   Role
+  patientContractAddress String?   @map("patient_contract_address")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  sessions               Session[]
+  healthRecords          HealthRecord[]
+  grantedPermissions     Permission[]         @relation("GrantedPermissions")
+  receivedPermissions    Permission[]         @relation("ReceivedPermissions")
+  emergencyRequests      EmergencyAccessRequest[]
+  accessLogs             AccessLog[]
+  keyHistory             KeyHistory[]
+  auditLogs              AuditLog[]
+
+  @@map("users")
+}
+
+// Role Enum
+enum Role {
+  patient
+  doctor
+  admin
+
+  @@map("role")
+}
+
+// Session Model - JWT refresh token management
+model Session {
+  id           String   @id @default(cuid())
+  walletAddress String   @map("wallet_address")
+  refreshToken String   @unique @map("refresh_token")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [walletAddress], references: [walletAddress], onDelete: Cascade)
+
+  @@index([walletAddress])
+  @@map("sessions")
+}
+
+// Health Record Model - Stores encrypted health data metadata
+model HealthRecord {
+  id                String   @id @default(cuid())
+  patientWallet     String   @map("patient_wallet")
+  recordId          Int      @map("record_id")
+  fhirDataHash      String   @map("fhir_data_hash")
+  storagePointer    String   @map("storage_pointer")
+  contentDigest     String   @map("content_digest")
+  wrappedKey        String   @map("wrapped_key")
+  transactionHash   String?  @map("transaction_hash")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  patient     User        @relation(fields: [patientWallet], references: [walletAddress], onDelete: Cascade)
+  permissions Permission[]
+  accessLogs  AccessLog[]
+
+  @@unique([patientWallet, recordId])
+  @@index([patientWallet])
+  @@map("health_records")
+}
+
+// Permission Model - Access control for health records
+model Permission {
+  id                  String    @id @default(cuid()) @map("permission_id")
+  patientWallet       String    @map("patient_wallet")
+  granteeWallet       String    @map("grantee_wallet")
+  recordIds           Int[]     @map("record_ids")
+  wrappedKey          String    @map("wrapped_key")
+  expirationTime      DateTime  @map("expiration_time")
+  isRevoked           Boolean   @default(false) @map("is_revoked")
+  revokedAt           DateTime? @map("revoked_at")
+  transactionHash     String?   @map("transaction_hash")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  patient       User           @relation("GrantedPermissions", fields: [patientWallet], references: [walletAddress], onDelete: Cascade)
+  grantee       User           @relation("ReceivedPermissions", fields: [granteeWallet], references: [walletAddress], onDelete: Cascade)
+  healthRecords HealthRecord[]
+
+  @@index([patientWallet])
+  @@index([granteeWallet])
+  @@index([isRevoked])
+  @@map("permissions")
+}
+
+// Emergency Access Request Model - Multi-physician approval
+model EmergencyAccessRequest {
+  id                  String   @id @default(cuid()) @map("request_id")
+  patientWallet       String   @map("patient_wallet")
+  physician1Wallet    String   @map("physician1_wallet")
+  physician2Wallet    String   @map("physician2_wallet")
+  recordIds           Int[]    @map("record_ids")
+  justificationCode   Int      @map("justification_code")
+  wrappedKey          String   @map("wrapped_key")
+  status              EmergencyStatus @default(pending)
+  expirationTime      DateTime @map("expiration_time")
+  confirmedAt         DateTime? @map("confirmed_at")
+  transactionHash     String?  @map("transaction_hash")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  // Relations
+  patient User @relation(fields: [patientWallet], references: [walletAddress], onDelete: Cascade)
+
+  @@index([patientWallet])
+  @@index([status])
+  @@map("emergency_access_requests")
+}
+
+// Emergency Status Enum
+enum EmergencyStatus {
+  pending
+  approved
+  rejected
+  expired
+
+  @@map("emergency_status")
+}
+
+// Access Log Model - Audit trail for record access
+model AccessLog {
+  id          String   @id @default(cuid())
+  recordId    String   @map("record_id")
+  accessorWallet String @map("accessor_wallet")
+  action      String
+  ipAddress   String?  @map("ip_address")
+  accessedAt  DateTime @default(now()) @map("accessed_at")
+
+  // Relations
+  record   HealthRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  accessor User         @relation(fields: [accessorWallet], references: [walletAddress], onDelete: Cascade)
+
+  @@index([recordId])
+  @@index([accessorWallet])
+  @@index([accessedAt])
+  @@map("access_logs")
+}
+
+// Key History Model - Track public key rotations
+model KeyHistory {
+  id              String   @id @default(cuid())
+  walletAddress   String   @map("wallet_address")
+  publicKey       String   @map("public_key")
+  version         Int
+  transactionHash String   @map("transaction_hash")
+  rotatedAt       DateTime @default(now()) @map("rotated_at")
+
+  // Relations
+  user User @relation(fields: [walletAddress], references: [walletAddress], onDelete: Cascade)
+
+  @@unique([walletAddress, version])
+  @@index([walletAddress])
+  @@map("key_history")
+}
+
+// Audit Log Model - System-wide audit trail
+model AuditLog {
+  id              String   @id @default(cuid())
+  walletAddress   String   @map("wallet_address")
+  action          String
+  transactionHash String?  @map("transaction_hash")
+  details         Json?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [walletAddress], references: [walletAddress], onDelete: Cascade)
+
+  @@index([walletAddress])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_log")
+}
