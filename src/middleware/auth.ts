@@ -134,7 +134,7 @@ export const requirePatientOrAdmin = requireRole('patient', 'admin');
 /**
  * Optional authentication (attach user if token present, but don't fail if missing)
  */
-export function optionalAuth(req: Request, res: Response, next: NextFunction): void {
+export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -167,7 +167,7 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction): v
  */
 export function generateToken(payload: JWTPayload, expiresIn?: string): string {
   return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: expiresIn || config.jwt.expiry,
+    expiresIn: (expiresIn || config.jwt.expiry) as any,
   });
 }
 
@@ -176,7 +176,7 @@ export function generateToken(payload: JWTPayload, expiresIn?: string): string {
  */
 export function generateRefreshToken(payload: JWTPayload): string {
   return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.refreshExpiry,
+    expiresIn: config.jwt.refreshExpiry as any,
   });
 }
 

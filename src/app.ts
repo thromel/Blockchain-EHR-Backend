@@ -39,7 +39,7 @@ if (config.env === 'development') {
 app.use(config.apiPrefix, routes);
 
 // Health check endpoint
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     status: 'healthy',
@@ -50,7 +50,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // Root endpoint
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
   res.json({
     success: true,
     message: 'Blockchain EHR Backend API',

@@ -3,17 +3,17 @@
  * @description Manages blockchain connection and provider instance
  */
 
-import { JsonRpcProvider, Wallet } from 'ethers';
+import { providers, Wallet } from 'ethers';
 import config from '../../config';
 
-let providerInstance: JsonRpcProvider | null = null;
+let providerInstance: providers.JsonRpcProvider | null = null;
 
 /**
  * Get blockchain provider instance (singleton)
  */
-export function getProvider(): JsonRpcProvider {
+export function getProvider(): providers.JsonRpcProvider {
   if (!providerInstance) {
-    providerInstance = new JsonRpcProvider(config.blockchain.rpcUrl);
+    providerInstance = new providers.JsonRpcProvider(config.blockchain.rpcUrl);
   }
   return providerInstance;
 }
@@ -30,7 +30,7 @@ export function createWallet(privateKey: string): Wallet {
  * Get network information
  */
 export async function getNetworkInfo(): Promise<{
-  chainId: bigint;
+  chainId: number;
   name: string;
 }> {
   const provider = getProvider();
@@ -53,10 +53,9 @@ export async function getBlockNumber(): Promise<number> {
 /**
  * Get gas price
  */
-export async function getGasPrice(): Promise<bigint> {
+export async function getGasPrice(): Promise<any> {
   const provider = getProvider();
-  const feeData = await provider.getFeeData();
-  return feeData.gasPrice || 0n;
+  return await provider.getGasPrice();
 }
 
 /**

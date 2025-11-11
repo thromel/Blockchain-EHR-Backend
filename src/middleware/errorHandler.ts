@@ -20,7 +20,7 @@ export class AppError extends Error {
   }
 }
 
-export function errorHandler(err: Error | AppError, req: Request, res: Response, next: NextFunction): void {
+export function errorHandler(err: Error | AppError, _req: Request, res: Response, _next: NextFunction): void {
   console.error('❌ Error:', err);
 
   // Default error values
