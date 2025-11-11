@@ -164,7 +164,7 @@ export class IPFSStorage implements IStorage {
         throw new Error('IPFS client not initialized');
       }
 
-      const stat = await this.client.object.stat(pointer);
+      const stat = await this.client.object.stat(pointer as any);
 
       return {
         size: stat.CumulativeSize,

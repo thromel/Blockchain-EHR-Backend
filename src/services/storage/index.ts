@@ -23,7 +23,7 @@ function createStorageService(): IStorage {
       return new S3Storage(config.storage.s3);
 
     case 'dual':
-      return new DualStorage(config.storage.ipfs, config.storage.s3);
+      return new DualStorage(config.storage.ipfs, config.storage.s3) as unknown as IStorage;
 
     default:
       throw new Error(`Unsupported storage type: ${storageType}`);

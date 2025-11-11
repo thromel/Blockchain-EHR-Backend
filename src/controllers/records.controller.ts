@@ -75,8 +75,7 @@ export async function addRecord(req: Request, res: Response, next: NextFunction)
     const addRecordResult = await patientRecordsService.addRecord(
       req.wallet!,
       storageResult.pointer,
-      contentDigest,
-      wrappedKeyForPatient
+      contentDigest
     );
 
     // Store record metadata in database
@@ -167,13 +166,14 @@ export async function getRecord(req: Request, res: Response, next: NextFunction)
     }
 
     // Get record metadata from blockchain
-    const recordMetadata = await patientRecordsService.getRecord(parseInt(recordId));
+    const recordMetadata = await patientRecordsService.getRecordMetadata(parseInt(recordId));
 
     // Get wrapped key for user
-    const wrappedKey = await patientRecordsService.getWrappedKey(
+    const accessInfo = await patientRecordsService.checkAccess(
       walletAddress,
       parseInt(recordId)
     );
+    const wrappedKey = accessInfo.wrappedKey;
 
     // Retrieve encrypted data from storage
     const storageService = createStorageService();
@@ -191,12 +191,10 @@ export async function getRecord(req: Request, res: Response, next: NextFunction)
     const ciphertext = encryptedBlob.slice(12, -16);
 
     const decrypted = aesGcm.decrypt(
-      {
-        iv,
-        ciphertext,
-        authTag,
-      },
-      aesKey
+      ciphertext,
+      aesKey,
+      iv,
+      authTag
     );
 
     const fhirData = JSON.parse(decrypted.toString('utf-8'));
@@ -252,9 +250,10 @@ export async function listRecords(req: Request, res: Response, next: NextFunctio
     // If requesting own records (patient)
     if (walletAddress.toLowerCase() === targetPatient.toLowerCase()) {
       const recordCount = await patientRecordsService.getRecordCount();
-      const records = await patientRecordsService.listRecords(
+      const allRecordIds = await patientRecordsService.getAllRecordIds();
+      const records = allRecordIds.slice(
         parseInt(offset as string),
-        parseInt(limit as string)
+        parseInt(offset as string) + parseInt(limit as string)
       );
 
       res.json({
@@ -270,10 +269,10 @@ export async function listRecords(req: Request, res: Response, next: NextFunctio
     }
 
     // If requesting someone else's records (doctor/admin)
-    const accessibleRecords = await patientRecordsService.getAccessibleRecords(
-      walletAddress,
+    const allAccessibleRecords = await patientRecordsService.getAccessibleRecords(walletAddress);
+    const accessibleRecords = allAccessibleRecords.slice(
       parseInt(offset as string),
-      parseInt(limit as string)
+      parseInt(offset as string) + parseInt(limit as string)
     );
 
     res.json({
@@ -373,8 +372,8 @@ export async function searchRecords(
       const recordCount = await patientRecordsService.getRecordCount();
       recordIds = Array.from({ length: recordCount }, (_, i) => i);
     } else {
-      const accessible = await patientRecordsService.getAccessibleRecords(walletAddress, 0, 1000);
-      recordIds = accessible.map((r: any) => r.recordId);
+      const accessible = await patientRecordsService.getAccessibleRecords(walletAddress);
+      recordIds = accessible; // getAccessibleRecords returns number[] directly
     }
 
     // Note: This is a simplified implementation

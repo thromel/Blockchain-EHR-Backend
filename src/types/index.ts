@@ -138,6 +138,7 @@ export interface StorageResult {
 
 export interface StorageOptions {
   pin?: boolean;
+  contentDigest?: string;
 }
 
 export interface StorageStats {
