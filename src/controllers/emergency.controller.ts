@@ -161,29 +161,19 @@ export async function approveEmergencyAccess(
     const emergencyAesKey = Buffer.from('a'.repeat(64), 'hex'); // Placeholder
 
     // Wrap key for both physicians
-    const wrappedKeyPhysician1 = await ecies.wrapKey(emergencyAesKey, physician1Key.publicKey);
-    const wrappedKeyPhysician2 = await ecies.wrapKey(emergencyAesKey, physician2Key.publicKey);
+    const physician1PublicKey = Buffer.from(physician1Key.publicKey.replace('0x', ''), 'hex');
+    const physician2PublicKey = Buffer.from(physician2Key.publicKey.replace('0x', ''), 'hex');
+    const wrappedKeyPhysician1 = await ecies.wrapKey(physician1PublicKey, emergencyAesKey);
+    const wrappedKeyPhysician2 = await ecies.wrapKey(physician2PublicKey, emergencyAesKey);
 
-    // Grant emergency access on blockchain for physician 1
-    const expirationTimestamp = Math.floor(new Date(grant.expiration).getTime() / 1000);
-
-    const result1 = await patientRecordsService.grantEmergencyAccess(
+    // Request emergency access on blockchain
+    const result = await patientRecordsService.requestEmergencyAccess(
       req.wallet!,
       grant.physician1_wallet,
-      grant.record_id,
-      wrappedKeyPhysician1,
-      expirationTimestamp,
-      grant.justification_code
-    );
-
-    // Grant emergency access on blockchain for physician 2
-    const result2 = await patientRecordsService.grantEmergencyAccess(
-      req.wallet!,
-      walletAddress,
-      grant.record_id,
-      wrappedKeyPhysician2,
-      expirationTimestamp,
-      grant.justification_code
+      walletAddress, // physician2
+      [grant.record_id], // recordIds as array
+      grant.justification_code,
+      wrappedKeyPhysician1 // Using physician1's wrapped key for now
     );
 
     // Update grant in database
@@ -201,7 +191,7 @@ export async function approveEmergencyAccess(
       [
         walletAddress,
         'emergency_access_approved',
-        result1.transactionHash,
+        result.transactionHash,
         {
           grantId,
           physician1: grant.physician1_wallet,
@@ -222,8 +212,9 @@ export async function approveEmergencyAccess(
         physician1: grant.physician1_wallet,
         physician2: walletAddress,
         justificationCode: grant.justification_code,
-        expirationTime: expirationTimestamp,
-        transactionHashes: [result1.transactionHash, result2.transactionHash],
+        expirationTime: Math.floor(new Date(grant.expiration).getTime() / 1000),
+        emergencyId: result.emergencyId,
+        transactionHash: result.transactionHash,
         status: 'confirmed',
       },
     });

@@ -3,13 +3,23 @@
  * @description Store encrypted healthcare records on IPFS
  */
 
-import { create, IPFSHTTPClient } from 'ipfs-http-client';
 import { createHash } from 'crypto';
 import { IStorage, StorageResult, StorageOptions, StorageIPFSConfig } from '../../types';
 
+// Use dynamic import to avoid ESM/CJS issues
+let create: any;
+
+async function loadIPFS() {
+  if (!create) {
+    const ipfsModule = await import('ipfs-http-client');
+    create = ipfsModule.create;
+  }
+  return { create };
+}
+
 export class IPFSStorage implements IStorage {
   private config: StorageIPFSConfig;
-  private client: IPFSHTTPClient | null = null;
+  private client: any = null;
 
   constructor(config: StorageIPFSConfig) {
     this.config = config;
@@ -24,7 +34,8 @@ export class IPFSStorage implements IStorage {
     }
 
     try {
-      this.client = create({
+      const { create: createClient } = await loadIPFS();
+      this.client = createClient({
         host: this.config.host,
         port: this.config.port,
         protocol: this.config.protocol as 'http' | 'https',

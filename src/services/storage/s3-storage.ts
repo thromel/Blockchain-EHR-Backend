@@ -24,6 +24,7 @@ export class S3Storage implements IStorage {
 
     try {
       // Lazy load AWS SDK
+      // @ts-ignore - AWS SDK is optional, loaded dynamically only when S3 storage is used
       const { S3Client } = await import('@aws-sdk/client-s3');
 
       const clientConfig: any = {
@@ -53,6 +54,7 @@ export class S3Storage implements IStorage {
     try {
       await this.initialize();
 
+      // @ts-ignore - AWS SDK is optional, loaded dynamically only when S3 storage is used
       const { PutObjectCommand } = await import('@aws-sdk/client-s3');
 
       // Calculate SHA-256 digest
@@ -102,6 +104,7 @@ export class S3Storage implements IStorage {
     try {
       await this.initialize();
 
+      // @ts-ignore - AWS SDK is optional, loaded dynamically only when S3 storage is used
       const { GetObjectCommand } = await import('@aws-sdk/client-s3');
 
       // Extract key from URL if needed
@@ -157,6 +160,7 @@ export class S3Storage implements IStorage {
     try {
       await this.initialize();
 
+      // @ts-ignore - AWS SDK is optional, loaded dynamically only when S3 storage is used
       const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
 
       const key = this.extractKeyFromPointer(pointer);
@@ -186,6 +190,7 @@ export class S3Storage implements IStorage {
     try {
       await this.initialize();
 
+      // @ts-ignore - AWS SDK is optional, loaded dynamically only when S3 storage is used
       const { HeadObjectCommand } = await import('@aws-sdk/client-s3');
 
       const key = this.extractKeyFromPointer(pointer);

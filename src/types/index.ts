@@ -197,6 +197,8 @@ export interface PublicKeyInfo {
   publicKey: string;
   version: number;
   timestamp: number;
+  isRevoked?: boolean;
+  registeredAt?: number;
 }
 
 // ============================================================================

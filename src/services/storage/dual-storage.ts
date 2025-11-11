@@ -78,8 +78,33 @@ export class DualStorage implements IStorage {
 
   /**
    * Verify blob integrity on both platforms
+   * Returns true only if both IPFS and S3 have valid copies
    */
-  async verify(
+  async verify(pointer: string, expectedDigest: string): Promise<boolean> {
+    try {
+      const pointers = JSON.parse(pointer);
+
+      const [ipfsValid, s3Valid] = await Promise.allSettled([
+        this.ipfsStorage.verify(pointers.ipfs, expectedDigest),
+        this.s3Storage.verify(pointers.s3, expectedDigest),
+      ]);
+
+      // Return true only if both storage backends have valid data
+      return (
+        ipfsValid.status === 'fulfilled' &&
+        s3Valid.status === 'fulfilled' &&
+        ipfsValid.value &&
+        s3Valid.value
+      );
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Verify blob integrity on both platforms with detailed status
+   */
+  async verifyDetailed(
     pointer: string,
     expectedDigest: string
   ): Promise<{
@@ -180,7 +205,7 @@ export class DualStorage implements IStorage {
   }> {
     try {
       const pointers = JSON.parse(pointer);
-      const existsStatus = await this.verify(pointer, expectedDigest);
+      const existsStatus = await this.verifyDetailed(pointer, expectedDigest);
 
       const results = {
         repaired: false,

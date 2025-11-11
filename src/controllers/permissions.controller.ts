@@ -205,7 +205,7 @@ export async function revokePermission(
     const patientRecordsService = new PatientRecordsService(patient.patient_contract_address);
 
     // Revoke permission on blockchain
-    const result = await patientRecordsService.revokePermission(
+    const transactionHash = await patientRecordsService.revokePermission(
       req.wallet!,
       parseInt(permissionId)
     );
@@ -225,7 +225,7 @@ export async function revokePermission(
       [
         walletAddress,
         'permission_revoked',
-        result.transactionHash,
+        transactionHash,
         { permissionId: parseInt(permissionId) },
       ]
     );
@@ -235,7 +235,7 @@ export async function revokePermission(
       message: 'Permission revoked successfully',
       data: {
         permissionId: parseInt(permissionId),
-        transactionHash: result.transactionHash,
+        transactionHash,
       },
     });
   } catch (error) {
@@ -385,10 +385,15 @@ export async function getPermission(
       throw new AppError('Patient contract not found', 404, 'CONTRACT_NOT_FOUND');
     }
 
-    const patientRecordsService = new PatientRecordsService(patient.patient_contract_address);
+    // Get permission from database cache
+    const permission = await db.oneOrNone(
+      `SELECT * FROM permissions WHERE permission_id = $1 AND patient_wallet = $2`,
+      [parseInt(permissionId), patientAddress]
+    );
 
-    // Get permission from blockchain
-    const permission = await patientRecordsService.getPermission(parseInt(permissionId));
+    if (!permission) {
+      throw new AppError('Permission not found', 404, 'PERMISSION_NOT_FOUND');
+    }
 
     res.json({
       success: true,
@@ -438,7 +443,8 @@ export async function batchGrantPermissions(
       // Get AES key for records and wrap it for grantee
       // Note: This is simplified - in production, you'd need to get the AES key for each record
       const dummyKey = Buffer.from('a'.repeat(64), 'hex'); // Placeholder
-      const wrappedKey = await ecies.wrapKey(dummyKey, granteeKey.publicKey);
+      const granteePublicKey = Buffer.from(granteeKey.publicKey.replace('0x', ''), 'hex');
+      const wrappedKey = await ecies.wrapKey(granteePublicKey, dummyKey);
 
       const result = await patientRecordsService.grantPermission(
         req.wallet!,

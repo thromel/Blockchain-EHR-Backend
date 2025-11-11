@@ -4,10 +4,13 @@
  * Configuration: ANSI X9.63 KDF with SHA-256, AES-128-CTR, HMAC-SHA-256
  */
 
+// @ts-ignore - eccrypto has no type definitions
 import * as eccrypto from 'eccrypto';
 import { randomBytes } from 'crypto';
-import { Wallet, keccak256, getAddress } from 'ethers';
+import { Wallet, utils } from 'ethers';
 import { Keypair, ECIESEncrypted } from '../types';
+
+const { keccak256, getAddress } = utils;
 
 /**
  * Generate a new secp256k1 keypair
