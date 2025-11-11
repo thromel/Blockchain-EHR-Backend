@@ -13,7 +13,8 @@ A complete rewrite of the EHR system implementing blockchain-based health record
 - **Controllers**: Auth, Records, Permissions, Keys, Emergency
 - **Services**: Blockchain, Storage (IPFS/S3), Database
 - **Middleware**: Authentication (JWT), Validation, Error Handling
-- **Database**: PostgreSQL with 7 tables
+- **Database**: PostgreSQL with dual ORM support (pg-promise + Prisma)
+- **Repository Pattern**: Clean Architecture example included
 
 ### Cryptography
 - **ECIES** (secp256k1): Public key encryption for key wrapping
@@ -52,7 +53,12 @@ psql -U postgres -c "CREATE DATABASE \"Blockchain-Healthcare\";"
 npm run migrate
 ```
 
-5. **Compile smart contracts**
+5. **Generate Prisma Client (optional - if using Prisma ORM)**
+```bash
+npm run prisma:generate
+```
+
+6. **Compile smart contracts**
 ```bash
 npm run compile
 ```
